@@ -1,0 +1,20 @@
+
+Call:
+lm(formula = yi ~ n, data = filtered_mccann2)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.74794 -0.11608 -0.01759  0.13014  0.55261 
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  1.686e-01  1.259e-02  13.386   <2e-16 ***
+n           -5.259e-05  2.848e-05  -1.847   0.0655 .  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.1952 on 415 degrees of freedom
+  (136 observations deleted due to missingness)
+Multiple R-squared:  0.008152,	Adjusted R-squared:  0.005762 
+F-statistic: 3.411 on 1 and 415 DF,  p-value: 0.06549
+

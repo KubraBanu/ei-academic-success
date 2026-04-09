@@ -1,0 +1,25 @@
+
+Call:
+lm(formula = yi ~ vi + n + ei_stream + ei_construct + ei_measure, 
+    data = filtered_mccann2)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.75763 -0.11608 -0.01895  0.12192  0.53177 
+
+Coefficients: (1 not defined because of singularities)
+               Estimate Std. Error t value Pr(>|t|)    
+(Intercept)   2.078e-01  3.009e-02   6.905 1.98e-11 ***
+vi           -6.296e+00  1.760e+00  -3.577  0.00039 ***
+n            -1.456e-04  3.673e-05  -3.965 8.68e-05 ***
+ei_stream     7.576e-03  1.321e-02   0.574  0.56652    
+ei_construct  4.743e-03  3.869e-03   1.226  0.22096    
+ei_measure           NA         NA      NA       NA    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.1911 on 401 degrees of freedom
+  (147 observations deleted due to missingness)
+Multiple R-squared:  0.05018,	Adjusted R-squared:  0.04071 
+F-statistic: 5.297 on 4 and 401 DF,  p-value: 0.0003636
+

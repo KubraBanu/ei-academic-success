@@ -1,0 +1,990 @@
+---
+title: 'Final Project: Can Emotional Intelligence Predict Academic Performance'
+Date: 12/1/2024
+Group_Members: K. Banu, J. Kawal, K.  Shanmugasundaram, and A. Zuger
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+Professor: Dr. Jin Fang
+Course: STAT 4600
+---
+
+```{r}
+# Title: Can EI be used as an alternative measure of potential student success
+# when evaluating admissions for graduate students?
+# Date: 12/1/2024
+# Group Members: K. Banu, J. Kawal, K.  Shanmugasundaram, and A. Zuger
+# Course: STAT 4600
+# Professor: Dr. Jin Fang
+
+# Attestation Statement
+# The code provided was taken from the following sources: 
+
+# Grolemund, Garrett, and Hadley Wickham. R for Data Science. O’Reilly Media, 2017.​
+
+# Long, JD, and Paul Teetor. R Cookbook. 2nd ed., O'Reilly Media, 2019. ISBN: 978-1-492-04068-2.​
+
+# Almog, Uri. “Decision Trees, Explained.” Medium, 2 June 2022, https://towardsdatascience.com/decision-trees-explained-d7678c43a59e.​
+
+# “Decision Tree for Regression in R Programming.” GeeksforGeeks, 26 July 2020, https://www.geeksforgeeks.org/decision-tree-for-regression-in-r-programming/.​
+
+# https://topepo.github.io/caret/variable-importance.html 
+
+# https://www.datacamp.com/tutorial/decision-trees-R
+
+# https://christophm.github.io/interpretable-ml-book/pdp.html
+
+# https://journal.r-project.org/archive/2017/RJ-2017-016/RJ-2017-016.pdf
+
+# https://www.science.smith.edu/~jcrouser/SDS293/labs/lab14-r.html
+
+# https://stackoverflow.com/questions/39886562/how-to-check-interaction-effects-for-a-lot-of-predictors-in-r
+
+# https://stats.stackexchange.com/questions/278800/predict-using-trained-model-on-dataset
+
+# https://www.geeksforgeeks.org/cross-validation-in-r-programming/
+
+# OpenAI. (2024). ChatGPT (November 2024 version) [Large language model]. Retrieved from https://chat.openai.com/ 
+
+# AI was used solely for debugging.
+
+```
+
+```{r}
+# Part 1: View Data, Trim Data, Calculate Descriptive Statistics.
+
+# Step 1: Downloading Data Package. 
+
+# Data upload and visualization
+
+#install.packages("psymetadata")
+#library(psymetadata)
+
+#data("maccann2020")
+
+#setwd("C:/Users/angel/OneDrive/Desktop/Final_code_files")
+
+#write.csv(maccann2020, "maccann2020.csv", row.names = FALSE)
+
+
+# Note: excluded code after running and downloading the csv file. Could not stitch to html with code present
+```
+
+
+
+```{r}
+# Start here: MccCan 2020 CSV is located in the accompanying folder
+maccann2020 <- read.csv("C:\\Users\\angel\\OneDrive\\Desktop\\Final_code_files\\maccann2020.csv")
+
+
+summary(maccann2020)
+
+# Step 2: Install packages.
+# Install Packages
+
+#Manual CRAN mirror
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+# Fix for html 
+unlink("C:/Users/angel/AppData/Local/R/win-library/4.4/00LOCK", recursive = TRUE)
+install.packages("rpart")
+
+
+library(dplyr)
+library(ggplot2)
+library(corrplot)
+library(tidyr)
+library(kableExtra)
+library(formattable)
+library(rlang)
+
+# Important Data Before Trim
+# Publication dates:1997-2019
+# Age of respondents: Min 7,Max 40, mean = 18.76
+# countries represented: Kuala Lumpur, Malaysia, USA, Nigeria, and Italy
+# respondents: 77% white
+# respondents: 62% female
+
+# Step 3: Read McCann Data into a data frame.
+
+EI_AP_Data <- data.frame(maccann2020)
+
+# Descriptive Statistics
+
+head(EI_AP_Data)
+
+str(EI_AP_Data)
+
+summary(EI_AP_Data) 
+
+# Variance and standard error calculated for quantitative variables
+
+var(EI_AP_Data$pub_year, na.rm = TRUE)
+sd(EI_AP_Data$pub_year, na.rm = TRUE)
+
+var(EI_AP_Data$yi, na.rm = TRUE)
+sd(EI_AP_Data$yi, na.rm = TRUE)
+
+var(EI_AP_Data$vi, na.rm = TRUE)
+sd(EI_AP_Data$vi, na.rm = TRUE)
+
+var(EI_AP_Data$n, na.rm = TRUE)
+sd(EI_AP_Data$n, na.rm = TRUE)
+
+var(EI_AP_Data$perc_white, na.rm = TRUE)
+sd(EI_AP_Data$perc_white, na.rm = TRUE)
+
+var(EI_AP_Data$age, na.rm = TRUE)
+sd(EI_AP_Data$age, na.rm = TRUE)
+
+var(EI_AP_Data$perc_female, na.rm = TRUE)
+sd(EI_AP_Data$perc_female, na.rm = TRUE)
+
+# Visualizations of Descriptive Statistics
+
+
+# Visualization of outliers for all variables in the `vars` list using boxplots
+# Assuming you have a list of variable names in the `vars` list
+vars <- c("pub_year", "yi", "vi", "n", "perc_white", "age", "perc_female")
+
+# Check for non-finite values in each variable
+summary(EI_AP_Data[, vars])
+
+# Alternatively, check the specific variables for NAs
+sapply(EI_AP_Data[, vars], function(x) sum(is.na(x)))
+for (var in vars) {
+  p <- ggplot(EI_AP_Data, aes(x = 1, y = !!sym(var))) + 
+    geom_boxplot(outlier.colour = "red", outlier.size = 3) +
+    labs(title = paste("Boxplot of", var), y = var) +
+    theme_minimal() +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  
+  # Print the plot
+  print(p)
+}
+
+# Proportion tables Created for Categorical Variables
+
+
+# Country
+length(EI_AP_Data$country)
+sum(is.na(EI_AP_Data$country))
+country_data_o <- EI_AP_Data$country[!is.na(EI_AP_Data$country)]
+prop_table_o1 <- prop.table(table(country_data_o)) * 100
+prop_table_o1 <- round(prop_table_o1, 2)
+prop_df1 <- data.frame(Category = names(prop_table_o1), Percentage = prop_table_o1)
+print(prop_df1)
+
+
+# Publication Type
+length(EI_AP_Data$pub_type)
+sum(is.na(EI_AP_Data$pub_type))
+pub_type_data_o <- EI_AP_Data$pub_type[!is.na(EI_AP_Data$pub_type)]
+prop_table_o2 <- prop.table(table(pub_type_data_o)) * 100
+prop_table_o2 <- round(prop_table_o2, 2)
+prop_df2 <- data.frame(Category = names(prop_table_o2), Percentage = prop_table_o2)
+print(prop_df2)
+
+# Publication Year
+pub_year_data_o <- EI_AP_Data$pub_year[!is.na(EI_AP_Data$pub_year)]
+prop_table_o3 <- prop.table(table(pub_year_data_o)) * 100
+prop_table_o3 <- round(prop_table_o3, 2)
+prop_df3 <- data.frame(Category = names(prop_table_o3), Percentage = prop_table_o3)
+print(prop_df3)
+
+#Education Level 1
+length(EI_AP_Data$ed_level1)
+sum(is.na(EI_AP_Data$ed_level1))
+ed_level1_data_o <- EI_AP_Data$ed_level1[!is.na(EI_AP_Data$ed_level1)]
+prop_table_o4 <- prop.table(table(ed_level1_data_o)) * 100
+prop_table_o4 <- round(prop_table_o4, 2)
+prop_df4 <- data.frame(Category = names(prop_table_o4), Percentage = prop_table_o4)
+print(prop_df4)
+
+# EI Stream
+length(EI_AP_Data$ei_stream)
+sum(is.na(EI_AP_Data$ei_stream))
+ei_stream_data_o <- EI_AP_Data$ei_stream[!is.na(EI_AP_Data$ei_stream)]
+prop_table_o5 <- prop.table(table(ei_stream_data_o)) * 100
+prop_table_o5 <- round(prop_table_o5, 2)
+prop_df5 <- data.frame(Category = names(prop_table_o5), Percentage = prop_table_o5)
+print(prop_df5)
+
+# EI Measure
+length(EI_AP_Data$ei_measure)
+sum(is.na(EI_AP_Data$ei_measure))
+ei_measure_data_o <- EI_AP_Data$ei_measure[!is.na(EI_AP_Data$ei_measure)]
+prop_table_o6 <- prop.table(table(ei_measure_data_o)) * 100
+prop_table_o6 <- round(prop_table_o6, 2)
+prop_df6 <- data.frame(Category = names(prop_table_o6), Percentage = prop_table_o6)
+print(prop_df6)
+
+# Achievement Type
+length(EI_AP_Data$achievement_type)
+sum(is.na(EI_AP_Data$achievement_type))
+achieve_type_data_o <- EI_AP_Data$achievement_type[!is.na(EI_AP_Data$achievement_type)]
+prop_table_o7 <- prop.table(table(achieve_type_data_o)) * 100
+prop_table_o7 <- round(prop_table_o7, 2)
+prop_df7 <- data.frame(Category = names(prop_table_o7), Percentage = prop_table_o7)
+print(prop_df7)
+
+
+```
+
+```{r}
+# Part 2: Trim Data Part 1-> By education level
+# filter df by column value, education level 1 = 2 (graduate)
+
+library(dplyr)
+summary(EI_AP_Data)
+
+
+filtered_mccann1 <-  EI_AP_Data[EI_AP_Data$ed_level1 == 2, ]  
+summary(filtered_mccann1)
+
+# 746 available samples at the graduate level
+
+# 2. Summary Statistics
+head(filtered_mccann1)
+
+str(filtered_mccann1)
+
+attach(filtered_mccann1)
+nrow(filtered_mccann1)
+ncol(filtered_mccann1)
+summary(filtered_mccann1)
+
+# 3. Variables and Summary of  Variable Statistics
+# Study_id: unique id for each study
+# Sample_id: unique id for each sample
+# es_id: unique id for each effect size
+# effect size measure the strength of the relationship between variables or difference between groups
+# the larger the effect size the more significance the findings have
+# ra value: Pearson correlation: -1 (perfect negative relationship - 1 perfect pos. correlation, close to 0 weak or no relationship)
+# primary author
+# pub_year: year paper was published
+# yi: effect size converted to an r value
+# vi: sampling variance for the effect size (SE^2)
+# pub_type: type of publication (0- journal article, 1 = dissertation, 2 = conference proceedings
+# 3 = unpublished data)
+# n = number of participants contributing to the effect size
+# ed_level1: level of education at the time of data collection (0 = primary, 1 = secondary, 2 = tertiary, 3 = mixed)
+# ed_level2 (academic performance measure): level of education at the time of data collection (0 = primary, 1 = secondary, 2 = tertiary, 3 = mixed)
+# country: country where the study took place
+# perc_white: % sample categorized as white (USA only)
+# age: mean age of the sample
+# perc_female: % sample that is female
+# ei_construct: (0 = overall ei, 2 = perception, 2 = facilitation, 3 = understanding, 5 = intrapersonal
+# 6 = interpersonal, 7 = stress management, 8 = adaptability, 9 = general mood)
+# ei_stream (stream or type of EI instrument used): (1 = maximum-performance ability tests, 2 = rating scales based on ability models
+# 3 = other broader models of EI that include non-ability constructs)
+# EI_measure (EI test used): (1.1 = MSCEIT, 1.2 = MEIS, 1.3: DANVA, 1.4 + STEU, 1.5: STEM
+# 2.1 = SUEIT, 2.2: SSRI, 2.3: SREIT, 2.4: TMMS, 2.5 = WLEIS, 3.1 = EQI. 3.2 = TEIQue)
+# subject area of academic performance: ( 0 = general, 1 = verbal/ LA, 2 = math, 3 = science, 
+# 4 = social studies, 5 = foreign language, 6 = psychology, 7 = medicine, 8 = engineering
+# 9 = physical education, 10 = art)
+# humanities (science v humanities): (0 = general, 1 = maht and sciences, 2 = humanities and verbal abilities)
+# achievement_type: (0 = course gade, 1 = standardized test)
+
+# Publication Year
+# Min: 1997, max: 2019, median: 2010, mean: 2009, IQR: 8
+
+#Effect size (r value)
+#yi: min: -0.69319, max: 0.71828, median: 0.13076, mean: 0.14799, IQR: 0.69029
+
+# Sample variance
+#vi: min: 0.0003938, max: 0.0551461, median: 0.0054171, mean: 0.0079933, IQR: 0.0099334
+
+#Sample Size
+
+# n: min: 18, max: 2195, median: 163, mean: 287.5, IQR: 2177
+
+#Education level
+# ed_level1: 2 = graduate
+
+# Academic performance
+#ed_level2: min: 1,max: 2, median: 2
+
+#Demographics (repeat after removing NA's)
+# Percent white: min: 0, max: 100, median: 52, mean: 56.73, IQR: 78
+# Percent female: min: 0, max: 100, median: 66.22, mean: 73.62, IQR: 100
+# age: min: 7.68, max: 40, median: 21.33, mean: 22.096, IQR: 32.32
+
+
+
+# Proportion tables for Categorical Variables to inform next steps
+
+#country fixed code
+# Check total entries and missing values
+print(length(filtered_mccann1$country))        # Total length
+print(sum(is.na(filtered_mccann1$country)))    # Number of missing values
+
+# Filter non-NA values
+country_data_f <- filtered_mccann1$country[!is.na(filtered_mccann1$country)]
+print(country_data_f)                          # Non-NA values
+
+# Calculate proportions and create a data frame
+prop_table_f1 <- prop.table(table(country_data_f)) * 100
+prop_table_f1 <- round(prop_table_f1, 2)
+print(prop_table_f1)                           # Proportions table
+
+# Create a data frame
+prop_dff1 <- data.frame(Category = names(prop_table_f1), Percentage = as.numeric(prop_table_f1))
+print(prop_dff1)                               # Final data frame
+
+
+# Country
+length(filtered_mccann1$country)
+sum(is.na(filtered_mccann1$country))
+country_data_f <- filtered_mccann1$country[!is.na(filtered_mccann1$country)]
+prop_table_f1 <- prop.table(table(country_data_f)) * 100
+prop_table_f1 <- round(prop_table_f1, 2)
+prop_dff1 <- data.frame(Category = names(prop_table_f1), Percentage = prop_table_f1)
+print(prop_dff1)
+
+
+#Publication Type
+length(filtered_mccann1$pub_type)
+sum(is.na(filtered_mccann1$pub_type))
+pub_type_data_f <- filtered_mccann1$pub_type[!is.na(filtered_mccann1$pub_type)]
+prop_table_f2 <- prop.table(table(pub_type_data_f)) * 100
+prop_table_f2 <- round(prop_table_f2, 2)  
+prop_dff2 <- data.frame(Category = names(prop_table_f2), Percentage = prop_table_f2)
+print(prop_dff2)
+
+# Publication Year
+length(filtered_mccann1$pub_year)
+sum(is.na(filtered_mccann1$pub_year))
+pub_year_data_f <- filtered_mccann1$pub_year[!is.na(filtered_mccann1$pub_year)]
+prop_table_f3 <- prop.table(table(pub_year_data_f)) * 100
+prop_table_f3 <- round(prop_table_f3, 2)  
+prop_dff3 <- data.frame(Category = names(prop_table_f3), Percentage = prop_table_f3)
+print(prop_dff3)
+
+#Education Level 1
+length(filtered_mccann1$ed_level1)
+sum(is.na(filtered_mccann1$ed_level1))
+ed_level1_data_f <- filtered_mccann1$ed_level1[!is.na(filtered_mccann1$ed_level1)]
+prop_table_f4 <- prop.table(table(ed_level1_data_f)) * 100
+prop_table_f4 <- round(prop_table_f4, 2)
+prop_dff4 <- data.frame(Category = names(prop_table_f4), Percentage = prop_table_f4)
+print(prop_dff4)
+
+# EI Stream
+length(filtered_mccann1$ei_stream)
+sum(is.na(filtered_mccann1$ei_stream))
+ei_stream_data_f <- filtered_mccann1$ei_stream[!is.na(filtered_mccann1$ei_stream)]
+prop_table_f5 <- prop.table(table(ei_stream_data_f)) * 100
+prop_table_f5 <- round(prop_table_f5, 2) 
+prop_dff5 <- data.frame(Category = names(prop_table_f5), Percentage = prop_table_f5)
+print(prop_dff5)
+
+# EI Measure
+length(filtered_mccann1$ei_measure)
+sum(is.na(filtered_mccann1$ei_measure))
+ei_measure_data_f <- filtered_mccann1$ei_measure[!is.na(filtered_mccann1$ei_measure)]
+prop_table_f6 <- prop.table(table(ei_measure_data_f)) * 100
+prop_table_f6 <- round(prop_table_f6, 2) 
+prop_dff6 <- data.frame(Category = names(prop_table_f6), Percentage = prop_table_f6)
+print(prop_dff6)
+
+# Achievement Type
+length(filtered_mccann1$achievement_type)
+sum(is.na(filtered_mccann1$achievement_type))
+achieve_type_data_f <- filtered_mccann1$achievement_type[!is.na(filtered_mccann1$achievement_type)]
+prop_table_f7 <- prop.table(table(achieve_type_data_f)) * 100
+prop_table_f7 <- round(prop_table_f7, 2) 
+prop_dff7 <- data.frame(Category = names(prop_table_f7), Percentage = prop_table_f7)
+print(prop_dff7)
+
+```
+
+```{r}
+# Part 3: (Filter 2) By EI_Measure/ stream and Descriptive Statistics
+# Filter by EI Measure 1.1 and 3.1 
+
+# Filter rows where ei_measure is either 1.1 or 3.1
+filtered_mccann2 <- filtered_mccann1[filtered_mccann1$ei_measure == 1.1 | filtered_mccann1$ei_measure == 3.1, ]
+
+# View summary statistics of the filtered data frame
+summary(filtered_mccann2)
+
+# Get the number of rows and columns in the filtered data frame
+nrow(filtered_mccann2)  # Number of rows
+ncol(filtered_mccann2)  # Number of columns
+
+# Proportion tables of important categorical variables to help inform next steps
+
+# EI Measure
+length(filtered_mccann2$ei_measure)
+sum(is.na(filtered_mccann2$ei_measure))
+ei_measure_data_f2 <- filtered_mccann2$ei_measure[!is.na(filtered_mccann2$ei_measure)]
+prop_table_f62 <- prop.table(table(ei_measure_data_f2)) * 100
+prop_table_f62 <- round(prop_table_f62, 2) 
+prop_dff62 <- data.frame(Category = names(prop_table_f62), Percentage = prop_table_f62)
+print(prop_dff62)
+
+
+#Education Level 1
+length(filtered_mccann2$ed_level1)
+sum(is.na(filtered_mccann2$ed_level1))
+ed_level1_data_f2 <- filtered_mccann2$ed_level1[!is.na(filtered_mccann2$ed_level1)]
+prop_table_f42 <- prop.table(table(ed_level1_data_f2)) * 100
+prop_table_f42 <- round(prop_table_f42, 2)
+prop_dff42 <- data.frame(Category = names(prop_table_f42), Percentage = prop_table_f42)
+print(prop_dff42)
+
+# EI Stream
+length(filtered_mccann2$ei_stream)
+sum(is.na(filtered_mccann2$ei_stream))
+ei_stream_data_f2 <- filtered_mccann2$ei_stream[!is.na(filtered_mccann1$ei_stream)]
+prop_table_f52 <- prop.table(table(ei_stream_data_f2)) * 100
+prop_table_f52 <- round(prop_table_f52, 2) 
+prop_dff52 <- data.frame(Category = names(prop_table_f52), Percentage = prop_table_f52)
+print(prop_dff52)
+
+# Achievement Type
+length(filtered_mccann2$achievement_type)
+sum(is.na(filtered_mccann2$achievement_type))
+achieve_type_data_f2 <- filtered_mccann2$achievement_type[!is.na(filtered_mccann2$achievement_type)]
+prop_table_f72 <- prop.table(table(achieve_type_data_f2)) * 100
+prop_table_f72 <- round(prop_table_f72, 2) 
+prop_dff72 <- data.frame(Category = names(prop_table_f72), Percentage = prop_table_f72)
+print(prop_dff72)
+
+# Visualization of outliers for all variables in the `vars` list using boxplots
+# Assuming you have a list of variable names in the `vars` list
+vars <- c("pub_year", "yi", "vi", "n", "perc_white", "age")
+
+# Check for non-finite values in each variable
+summary(filtered_mccann2[, vars])
+
+# Alternatively, check the specific variables for NAs
+sapply(filtered_mccann2[, vars], function(x) sum(is.na(x)))
+for (var in vars) {
+  p <- ggplot(filtered_mccann2, aes(x = 1, y = !!sym(var))) +  # Using 1 for x-axis as a dummy variable
+    geom_boxplot(outlier.colour = "blue", outlier.size = 3) +
+    labs(title = paste("Boxplot of", var), y = var) +
+    theme_minimal() +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+  
+  # Print the plot
+  print(p)
+}
+```
+
+```{r}
+# Part 4: Preliminary Data (filtered McCan 2)
+
+
+# Group by ei_measure and summarize r^2 statistics
+summary_stats <- filtered_mccann2 %>%
+  group_by(ei_stream) %>%
+  summarize(
+    mean_r2 = mean(yi, na.rm = TRUE),
+    median_r2 = median(yi, na.rm = TRUE),
+    sd_r2 = sd(yi, na.rm = TRUE),
+    min_r2 = min(yi, na.rm = TRUE),
+    max_r2 = max(yi, na.rm = TRUE),
+    count = n()
+  )
+
+# View the summarized statistics
+print(summary_stats)
+
+# Boxplot of mean effect size grouped by ei_measure
+y_range <- range(filtered_mccann2$yi, na.rm = TRUE)
+
+
+boxplot(yi ~ ei_stream, data = filtered_mccann2, 
+        main = "Boxplot of Effect Size (r^2) by EI Stream", 
+        xlab = "EI Stream", ylab = "Effect Size (r^2)", 
+        col = "lightblue", ylim = c(y_range[1], y_range[2] * 1.1)) 
+# Barplot of mean r^2 by ei_measure
+# Ensures 'summary_stats' is created correctly:
+summary_stats <- filtered_mccann2 %>%
+  group_by(ei_stream) %>%
+  summarize(mean_r2 = mean(yi^2, na.rm = TRUE)  # Calculate mean of r^2 (effect size squared)
+  )
+
+# Sort by mean_r2
+summary_stats <- summary_stats %>% arrange(desc(mean_r2))
+
+# Checking for NAN values and remove them
+any(is.na(summary_stats$mean_r2))  # Checks if there are any NAs
+any(is.nan(summary_stats$mean_r2))  # Checks if there are any NaNs
+any(is.infinite(summary_stats$mean_r2))  # Checks for infinite values
+
+# QC NaN values
+summary_stats_clean <- summary_stats[!is.na(summary_stats$mean_r2) & !is.nan(summary_stats$mean_r2) & !is.infinite(summary_stats$mean_r2), ]
+
+
+# Check validity of the data
+max_value <- max(summary_stats$mean_r2, na.rm = TRUE)
+if (is.finite(max_value)) {
+  ylim = c(0, max_value * 1.4)
+} else {
+  ylim = c(0, 1)  # Default fallback
+}
+
+# Visualize with a barplot
+barplot(
+  summary_stats_clean$mean_r2, 
+  names.arg = summary_stats_clean$ei_stream,  
+  main = "Mean Effect Size (r^2) by EI Stream", 
+  xlab = "EI Stream", 
+  ylab = "Mean Effect Size (r^2)", 
+  col = "orange", 
+  las = 2, 
+  ylim = c(0, max(summary_stats_clean$mean_r2) * 1.4) 
+)
+
+
+# Save the summarized statistics to a CSV file
+write.csv(summary_stats, "grouped_r2_summary.csv", row.names = FALSE)
+
+```
+
+```{r}
+# Part 5: Linear Regression Analysis (Ran 6 Models)
+
+# Model 1: Mix of Important Variables
+# Fitting the model 
+# yi = effect size depndent variable
+# vi, n, ei_stream, ei_measure independent variables
+model1 <- lm(yi ~ vi + n + ei_stream + ei_measure, data = filtered_mccann2)
+
+# Summary
+summary(model1)
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model1)
+
+# Save summary
+capture.output(summary(model1), file = "model_summary.txt")
+
+# Results
+
+# Residuals
+# The differences between the observed and predicted values of the effect size. 
+
+# Spread: range -0.75165 - 0.5241
+
+# Coefficients Table
+
+# Overview of the table
+# Estimate: Effect size for each variable. 
+# Standard Error: SD of the effect size. 
+# t-value: Test statistic for the hypothesis -> H0 = 0
+# P-value: measure of significance
+
+# Summary of Coefficients
+# Intercept: 0.2170, (p < 0.00) ***
+# vi: -6.614, (p = 0.000179), negative relationship
+# n: -0.0001465, (p < 0.001), *** weak negative relationship
+# ei_stream: 0.01390, (p = 0.195), *** not significant
+# ei_measure: not measured -> colinear with other variables
+
+# Summary of Model Fit
+# Residual standard error: 0.1918
+# Multiple R-squared: 0.04685, 4.69% of the variability in the model
+# is explained by this model -> weak explanatory power
+# Adjusted R-squared: 0.03992
+# F-statistic: 6.766, p = 0.0001833
+
+#-----------------------------------------------------------------------------------------------------------
+
+# Linear Regression Analysis
+
+# Model 2: All important variables
+# Fitting the model 
+# yi = effect size depndent variable
+# vi, n, ei_stream, ei_measure, ei_construct independent variables
+model2 <- lm(yi ~ vi + n + ei_stream + ei_construct + ei_measure, data = filtered_mccann2)
+
+# Summary
+summary(model2)
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model2)
+
+# Save summary
+capture.output(summary(model2), file = "model2_summary.txt")
+
+# Results
+
+# Residuals
+# The differences between the observed and predicted values of the effect size. 
+
+# Spread: range -0.75763 - 0.53177
+
+# Coefficients Table
+
+# Overview of the table
+# Estimate: Effect size for each variable. 
+# Standard Error: SD of the effect size. 
+# t-value: Test statistic for the hypothesis -> H0 = 0
+# P-value: measure of significance
+
+# Summary of Coefficients
+# Intercept: 0.208, (p < 0.001) ***
+# vi: -6.296, (p = 0.00039), *** strong negative relationship
+# n: -0.0001465, (p < 0.001), *** weak negative relationship
+# ei_stream: 0.007576, (p = 0.56652), not significant
+# ei_construct: 0.004743, (p = 0.22096)
+# ei_measure: not measured -> co linear with other variables
+
+# Summary of Model Fit
+# Residual standard error: 0.1911
+# Multiple R-squared: 0.0518, 5.02% of the variability in the model
+# is explained by this model -> weak explanatory power
+# Adjusted R-squared: 0.04071
+# F-statistic: 5.297, p = 0.00003636
+
+#-----------------------------------------------------------------------------------------------------------
+
+# Linear Regression Analysis
+
+# Model 3: vi
+# Fitting the model 
+# yi = effect size dependent variable
+# vi independent variable
+model3 <- lm(yi ~ vi , data = filtered_mccann2)
+
+# Summary
+summary(model3)
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model3)
+
+# Save summary
+capture.output(summary(model3), file = "model3_summary.txt")
+
+# Results
+
+# Residuals
+# The differences between the observed and predicted values of the effect size. 
+
+# Spread: range -0.7339 - 0.5644
+
+# Coefficients Table
+
+# Overview of the table
+# Estimate: Effect size for each variable. 
+# Standard Error: SD of the effect size. 
+# t-value: Test statistic for the hypothesis -> H0 = 0
+# P-value: measure of significance
+
+# Summary of Coefficients
+# Intercept: 0.17602, (p < 0.00) ***
+# vi: -3.01211, (p = 0.0389), * strong negative relationship
+
+# Summary of Model Fit
+# Residual standard error: 0.195
+# Multiple R-squared: 0.01024, 1.02% of the variability in the model
+# is explained by this model -> weak explanatory power
+# Adjusted R-squared: 0.007855
+# F-statistic: 4.294, p = 0.03887
+
+
+#-----------------------------------------------------------------------------------------------------------
+
+# Linear Regression Analysis
+
+# Model 4: n
+# Fitting the model 
+# yi = effect size depndent variable
+# n independent variable
+model4 <- lm(yi ~ n , data = filtered_mccann2)
+
+# Summary
+summary(model4)
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model4)
+
+# Save summary
+capture.output(summary(model4), file = "model4_summary.txt")
+
+# Results
+
+# Residuals
+# The differences between the observed and predicted values of the effect size. 
+
+# Spread: range -0.74794 - 0.55261
+
+# Coefficients Table
+
+# Overview of the table
+# Estimate: Effect size for each variable. 
+# Standard Error: SD of the effect size. 
+# t-value: Test statistic for the hypothesis -> H0 = 0
+# P-value: measure of significance
+
+# Summary of Coefficients
+# Intercept: 0.1686, (p < 0.0) ***
+# n: -0.00005, (p = 0.0655), strong negative relationship
+
+# Summary of Model Fit
+# Residual standard error: 0.195
+# Multiple R-squared: 0.008152, 0.08% of the variability in the model
+# is explained by this model -> weak explanatory power
+# Adjusted R-squared: 0.005762
+# F-statistic: 3.4``, p = 0.06549
+
+
+#-----------------------------------------------------------------------------------------------------------
+
+# Linear Regression Analysis
+
+# Model 5: ei_measure
+# Fitting the model 
+# yi = effect size depndent variable
+#  ei_stream independent variable
+model5 <- lm(yi ~ ei_measure , data = filtered_mccann2)
+
+# Summary
+summary(model5)
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model5)
+
+# Save summary
+capture.output(summary(model5), file = "model5_summary.txt")
+
+# Results
+
+# Residuals
+# The differences between the observed and predicted values of the effect size. 
+
+# Spread: range -0.73102 - 0.56953
+
+# Coefficients Table
+
+# Overview of the table
+# Estimate: Effect size for each variable. 
+# Standard Error: SD of the effect size. 
+# t-value: Test statistic for the hypothesis -> H0 = 0
+# P-value: measure of significance
+
+# Summary of Coefficients
+# Intercept: 0.143746, (p < 0.0) ***
+# ei_measure: 0.0045525, (p = 0.636), strong negative relationship
+
+# Summary of Model Fit
+# Residual standard error: 0.1959
+# Multiple R-squared: 0.0005416, 0.05% of the variability in the model
+# is explained by this model -> weak explanatory power
+# Adjusted R-squared: -0.001867
+# F-statistic: 0.2249, p = 0.6356
+
+#-----------------------------------------------------------------------------------------------------------
+
+# Linear Regression Analysis
+
+# Model 6: achievement type
+# Fitting the model 
+# yi = effect size depndent variable
+#  ei_stream independent variable
+model6 <- lm(yi ~ achievement_type , data = filtered_mccann2)
+
+# Summary
+summary(model6)
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model6)
+
+# Save summary
+capture.output(summary(model6), file = "model6_summary.txt")
+
+# Results
+
+# Residuals
+# The differences between the observed and predicted values of the effect size. 
+
+# Spread: range -0.73667 - 0.56967
+
+# Coefficients Table
+
+# Overview of the table
+# Estimate: Effect size for each variable. 
+# Standard Error: SD of the effect size. 
+# t-value: Test statistic for the hypothesis -> H0 = 0
+# P-value: measure of significance
+
+# Summary of Coefficients
+# Intercept: 0.154395, (p < 0.00) ***
+# achievement type: -0.005785, (p = 0.822), strong negative relationship
+
+# Summary of Model Fit
+# Residual standard error: 0.196
+# Multiple R-squared: 0.0001223, 0.01% of the variability in the model
+# is explained by this model -> weak explanatory power
+# Adjusted R-squared: -0.002287
+# F-statistic: 0.05075, p = 0.8219
+
+#-----------------------------------------------------------------------------------------------------------
+
+# Linear Regression Analysis
+
+# Model 7: vi and n
+# Fitting the model 
+# yi = effect size depndent variable
+#  vi and n independent variables
+model7 <- lm(yi ~ vi + n , data = filtered_mccann2)
+
+# Summary
+summary(model7)
+
+# Diagnostic plots
+par(mfrow = c(2, 2))
+plot(model7)
+
+# Save summary
+capture.output(summary(model7), file = "model7_summary.txt")
+
+# Results
+
+# Residuals
+# The differences between the observed and predicted values of the effect size. 
+
+# Spread: range -0.76164 - 0.53280
+
+# Coefficients Table
+
+# Overview of the table
+# Estimate: Effect size for each variable. 
+# Standard Error: SD of the effect size. 
+# t-value: Test statistic for the hypothesis -> H0 = 0
+# P-value: measure of significance
+
+# Summary of Coefficients
+# Intercept: -0.2413, (p < 0.0) ***
+# vi: -6.77, (p = 0.000121),*** strong negative relationship
+# n: -0.0001, (p = 0.00192), *** strong negative relationship
+
+# Summary of Model Fit
+# Residual standard error: 0.192
+# Multiple R-squared: 0.04297, 4.3% of the variability in the model
+# is explained by this model -> weak explanatory power
+# Adjusted R-squared: 0.0384
+# F-statistic: 9.293, p = 0.000127, ***
+
+```
+
+
+```{r}
+
+# Part 6:  Decision Tree 
+
+# Install packages 
+install.packages("rpart")
+install.packages("rpart.plot") 
+
+library(rpart)
+library(rpart.plot)
+
+# Fitted decision tree with restricted variables (author, sample_id, country, ei_measure, achievement_type)
+tree_model <- rpart(yi ~ vi + n + age + ei_construct + ei_measure + achievement_type, 
+                    data = filtered_mccann2, 
+                    method = "anova")
+
+# Print tree model
+print(tree_model)
+
+# Use cp table to prune the tree
+printcp(tree_model)
+
+# Prune the tree based on the complexity parameter (cp) value that minimizes cross-validation error
+optimal_cp <- tree_model$cptable[which.min(tree_model$cptable[,"xerror"]), "CP"]
+pruned_tree <- prune(tree_model, cp = optimal_cp)
+
+# Print the pruned tree
+print(pruned_tree)
+
+
+# Plot cross-validation error 
+# Extract and print the cross-validation error for the unpruned tree
+cv_error <- tree_model$cptable[, "xerror"]
+print(cv_error)
+
+# Find and print the minimum cross-validation error
+min_cv_error <- min(cv_error)
+cat("Minimum Cross-Validation Error:", min_cv_error, "\n")
+
+# Find the complexity parameter (cp) that corresponds to the minimum cross-validation error
+optimal_cp <- tree_model$cptable[which.min(cv_error), "CP"]
+cat("Optimal Complexity Parameter (cp):", optimal_cp, "\n")
+
+# Results: 
+
+# 1. Tree Structure
+# Node = subset of data
+# Splits based on conditions
+# * -> terminal node (leaf)
+
+# 2. Nodes
+# node -> unique
+# split -> condition that splits the data
+# n -> # observations in the node
+# deviance -> node variation
+# yval -> predicted value for observations in the node
+
+# 3. CP Values (Complexity Parameter)
+# CP: complexity parameter , low values = more branches, higher values = tree pruned earlier
+# nsplit: # branches at each split
+# Relative Error: relative error which grows as the tree grows
+# xerror: cross-validation error
+# xstd: sd of the cross-validation error
+# root node: initial split at the root of the tree
+# Optimal CP -> minimizes xerror
+
+# Summary of Findings
+# 1. Effect size (yi) decreases with increased variance (vi) or larger population sizes (n) 
+# 2. Age affected earlier splits, possible significant effect on effect size
+# 3. Min CV error: 0.646
+# Optimal CP: 0.012
+
+#--------------------------------------------------------------------------------------------------------
+
+# Measurement of Tree Performance
+
+
+# Cross-validation Model
+printcp(pruned_tree)  #  (xerror) for each split
+
+# Root node error = 0.03823
+# n = 417
+
+# Add to limitations: #NaN values/ low population after NaN removal
+#--------------------------------------------------------------------------------------------------------
+
+# Measurement of Variable Effects
+
+# Which variables are important?
+importance <- pruned_tree$variable.importance
+importance <- sort(importance, decreasing = TRUE)
+print(importance)
+
+# Results from most to least important
+# vi = 5.923
+# n = 4.438
+# age = 2.67
+# ei_measure = 0.7698
+# ei_construct = 0.4275492
+# achievement type = 0.223
+
+
+# View variable interactions
+library(rpart.plot)
+rpart.plot(pruned_tree, type = 2, extra = 101, fallen.leaves = TRUE)
+
+
+```
