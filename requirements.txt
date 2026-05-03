@@ -1,0 +1,29 @@
+# R Package Requirements
+# Install in R with: install.packages(c(...))
+
+# Core packages
+rmarkdown
+knitr
+ggplot2
+dplyr
+tidyr
+tidyverse
+
+# Statistical modeling
+rpart
+rpart.plot
+caret
+MASS
+
+# NLP / Text
+tm
+SnowballC
+
+# Visualization
+corrplot
+ggcorrplot
+gridExtra
+
+# Data
+readr
+readxl
