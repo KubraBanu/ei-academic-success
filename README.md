@@ -63,13 +63,13 @@ This project investigates whether **Emotional Intelligence (EI)** is a statistic
 
 | File | Description |
 |------|-------------|
-| `20241212_STAT4600_Final_project_Code_EI_Measures_KB_JK_KS_AZ.Rmd` | Main R Markdown analysis file |
-| `20241212_STAT4600_Final_project_Code_EI_Measures_KB_JK_KS_AZ.html` | Rendered HTML output of full analysis |
-| `20241212_KBanu_JKawal_KhabiShan_AZuger_Maccan_2020_EI_STAT4600_Final_Project.R` | EI_Analysis_Final.R |
+| `20241212_STAT4600_Final_project_Code_EI_Measures.Rmd` | Main R Markdown analysis file |
+| `20241212_STAT4600_Final_project_Code_EI_Measures.html` | Rendered HTML output of full analysis |
+| `EI_Analysis_Final_Project.R` | EI_Analysis_Final.R |
 | `maccann2020.csv` | Dataset used for analysis |
 | `grouped_r2_summary.csv` | R-squared summary by model group |
 | `model_summary.txt` – `model7_summary.txt` | Individual regression model outputs |
-| `202411208_KB_JK_KS_AZ_STAT4600_FInal_Project_v4.pdf` | Final project report |
+| `202411208_STAT4600_FInal_Project_v4.pdf` | Final project report |
 | `20241128_Update_STAT_4600_Project_EI_PPT.pptx` | Final presentation slides |
 | `2025_Emotional_Intelligence_Clark_Unovserity_Presentation.pptx` | NEDSI 2025 conference presentation |
 | `2025_NEDSI_Poster_Emotional_Intellgience.pptx` | NEDSI 2025 research poster |
