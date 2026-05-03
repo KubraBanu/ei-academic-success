@@ -1,10 +1,7 @@
-# Emotional Intelligence as a Measure of Academic Success
+# Emotional Intelligence & Academic Success
 
-**Course:** STAT 4600 — Intermediary Statistical Modeling for Analytics  
-**Institution:** Clark University School of Business  
-**Term:** Fall 2024  
-**Team:** Kubra Banu, Joash Kawal, Kabhilan Shanmugasundaram, Angelina Zuger  
-**Presented at:** NEDSI 2025 Conference
+**Author:** Kubra Banu
+**Presented at:** NEDSI 2025 Academic Conference
 
 ---
 
@@ -68,7 +65,7 @@ This project investigates whether **Emotional Intelligence (EI)** is a statistic
 |------|-------------|
 | `20241212_STAT4600_Final_project_Code_EI_Measures_KB_JK_KS_AZ.Rmd` | Main R Markdown analysis file |
 | `20241212_STAT4600_Final_project_Code_EI_Measures_KB_JK_KS_AZ.html` | Rendered HTML output of full analysis |
-| `20241212_KBanu_JKawal_KhabiShan_AZuger_Maccan_2020_EI_STAT4600_Final_Project.R` | Raw R script |
+| `20241212_KBanu_JKawal_KhabiShan_AZuger_Maccan_2020_EI_STAT4600_Final_Project.R` | EI_Analysis_Final.R |
 | `maccann2020.csv` | Dataset used for analysis |
 | `grouped_r2_summary.csv` | R-squared summary by model group |
 | `model_summary.txt` – `model7_summary.txt` | Individual regression model outputs |
